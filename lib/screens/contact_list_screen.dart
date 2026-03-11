@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import '../models/contact.dart';
 import '../services/contact_service.dart';
 import 'add_contact_screen.dart';
 import 'edit_contact_screen.dart';
+import 'contact_detail_screen.dart';
 
 class ContactListScreen extends StatefulWidget {
   const ContactListScreen({super.key});
@@ -77,6 +79,78 @@ class _ContactListScreenState extends State<ContactListScreen> {
     );
   }
 
+  Widget _buildContactCard(Contact contact, int index) {
+    final initiale = contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?';
+
+    return TweenAnimationBuilder<Offset>(
+      tween: Tween(begin: const Offset(1, 0), end: Offset.zero),
+      duration: Duration(milliseconds: 300 + (index * 80)),
+      curve: Curves.easeOut,
+      builder: (context, offset, child) {
+        return FractionalTranslation(
+          translation: offset,
+          child: Opacity(
+            opacity: (1 - offset.dx).clamp(0.0, 1.0),
+            child: child,
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: ListTile(
+          leading: Hero(
+            tag: 'avatar-${contact.id}',
+            child: CircleAvatar(
+              backgroundColor: Colors.deepPurple,
+              child: Text(
+                initiale,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          title: Text(
+            contact.name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(contact.phone),
+              if (contact.email.isNotEmpty)
+                Text(
+                  contact.email,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+            ],
+          ),
+          isThreeLine: contact.email.isNotEmpty,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ContactDetailScreen(contact: contact),
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                onPressed: () => _goToEditContact(contact),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _deleteContact(contact),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,15 +177,19 @@ class _ContactListScreenState extends State<ContactListScreen> {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.people_outline, size: 80, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
+                children: [
+                  Lottie.asset(
+                    'assets/animations/empty.json',
+                    width: 250,
+                    repeat: true,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
                     'Aucun contact pour le moment',
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Appuyez sur + pour en ajouter un',
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
@@ -123,58 +201,8 @@ class _ContactListScreenState extends State<ContactListScreen> {
           return ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: contacts.length,
-            itemBuilder: (context, index) {
-              final contact = contacts[index];
-              final initiale = contact.name.isNotEmpty
-                  ? contact.name[0].toUpperCase()
-                  : '?';
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.deepPurple,
-                    child: Text(
-                      initiale,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    contact.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(contact.phone),
-                      if (contact.email.isNotEmpty)
-                        Text(
-                          contact.email,
-                          style: const TextStyle(
-                              color: Colors.grey, fontSize: 12),
-                        ),
-                    ],
-                  ),
-                  isThreeLine: contact.email.isNotEmpty,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _goToEditContact(contact),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteContact(contact),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            itemBuilder: (context, index) =>
+                _buildContactCard(contacts[index], index),
           );
         },
       ),
